@@ -8,6 +8,6 @@ void main() {
     expect(find.text('BGR'), findsOneWidget);
     expect(find.text('خلي المنتج يبرز'), findsOneWidget);
     expect(find.text('إزالة الخلفية'), findsOneWidget);
-    expect(find.text('اختيار من المعرض'), findsOneWidget);
+    expect(find.text('اختيار الصور'), findsOneWidget);
   });
 }
