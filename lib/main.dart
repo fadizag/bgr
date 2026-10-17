@@ -20,10 +20,7 @@ class BgrApp extends StatelessWidget {
       title: 'BGR - إزالة الخلفية',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: olive,
-          surface: cream,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: olive, surface: cream),
         scaffoldBackgroundColor: cream,
         appBarTheme: const AppBarTheme(
           backgroundColor: cream,
@@ -58,22 +55,19 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ImagePicker _picker = ImagePicker();
-  XFile? _selectedImage;
+  List<XFile> _selectedImages = [];
 
-  Future<void> _pickImage() async {
-    final image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 100,
-    );
-    if (!mounted || image == null) return;
-    setState(() => _selectedImage = image);
+  Future<void> _pickImages() async {
+    final images = await _picker.pickMultiImage(imageQuality: 100);
+    if (!mounted || images.isEmpty) return;
+    setState(() => _selectedImages = images);
   }
 
   void _showEngineNotReady() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'تم تجهيز اختيار الصور. ربط محرك إزالة الخلفية هو الخطوة التالية.',
+          'تم تجهيز اختيار مجموعة صور. ربط محرك إزالة الخلفية هو الخطوة التالية.',
         ),
       ),
     );
@@ -81,7 +75,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = _selectedImage != null;
+    final hasImages = _selectedImages.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -119,7 +113,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'اختر صورة، وبعدها جهّزها بخلفية شفافة أو بيضاء.',
+              'اختر عدة صور مرة واحدة، وجهّزها لخلفية بيضاء أو شفافة.',
               style: TextStyle(
                 fontSize: 15,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -127,21 +121,70 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 24),
             Container(
-              constraints: const BoxConstraints(minHeight: 300),
+              constraints: const BoxConstraints(minHeight: 260),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: const Color(0xFFE5E1D6)),
               ),
               clipBehavior: Clip.antiAlias,
-              child: hasImage
-                  ? Image.file(
-                      File(_selectedImage!.path),
-                      fit: BoxFit.contain,
-                      height: 340,
+              child: hasImages
+                  ? Column(
+                      children: [
+                        SizedBox(
+                          height: 260,
+                          width: double.infinity,
+                          child: Image.file(
+                            File(_selectedImages.first.path),
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.photo_library_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'تم اختيار ${_selectedImages.length} صورة',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => setState(
+                                  () => _selectedImages = [],
+                                ),
+                                child: const Text('مسح'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          height: 82,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _selectedImages.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (context, index) => ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                File(_selectedImages[index].path),
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     )
                   : InkWell(
-                      onTap: _pickImage,
+                      onTap: _pickImages,
                       child: const Padding(
                         padding: EdgeInsets.all(28),
                         child: Column(
@@ -154,7 +197,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             SizedBox(height: 18),
                             Text(
-                              'أضف صورة المنتج',
+                              'أضف صور المنتجات',
                               style: TextStyle(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700,
@@ -162,7 +205,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'اضغط لاختيار صورة من المعرض',
+                              'اختر صورة واحدة أو مجموعة صور من المعرض',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.black54),
                             ),
@@ -173,9 +216,11 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 18),
             OutlinedButton.icon(
-              onPressed: _pickImage,
+              onPressed: _pickImages,
               icon: const Icon(Icons.photo_library_outlined),
-              label: Text(hasImage ? 'اختيار صورة أخرى' : 'اختيار من المعرض'),
+              label: Text(
+                hasImages ? 'إضافة صور / تغيير المجموعة' : 'اختيار الصور',
+              ),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
                 foregroundColor: const Color(0xFF454D2F),
@@ -187,9 +232,13 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: hasImage ? _showEngineNotReady : null,
+              onPressed: hasImages ? _showEngineNotReady : null,
               icon: const Icon(Icons.auto_fix_high_rounded),
-              label: const Text('إزالة الخلفية'),
+              label: Text(
+                hasImages
+                    ? 'إزالة الخلفية من ${_selectedImages.length} صورة'
+                    : 'إزالة الخلفية',
+              ),
             ),
             const SizedBox(height: 16),
             const Row(
@@ -199,7 +248,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'لن نغيّر الصورة الأصلية. سنضيف حفظ النتيجة بصيغة PNG شفافة بعد ربط محرك الإزالة.',
+                    'ستبقى الصور الأصلية كما هي. حفظ النتائج ومعالجة الدفعات سيُفعّلان بعد ربط محرك الإزالة.',
                     style: TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                 ),
